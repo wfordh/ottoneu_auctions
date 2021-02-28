@@ -19,7 +19,7 @@ jobs:
       with:
         python-version: 3.7
     - run: pip install -r requirements.txt
-    - run: python3 scripts/active_auctions.py | awk 'gsub("Gathering player lookup table. This may take a moment. ", "")' > public/index.html
+    - run: python3 scripts/active_auctions.py > public/index.html
     - name: GitHub Pages
       if: success()
       uses: crazy-max/ghaction-github-pages@v2.2.0
