@@ -50,7 +50,6 @@ def get_ottoneu_player_page(player_id, lg_id):
         .strip()
         .rsplit(maxsplit=1)[1]
     )
-    # need to fix something in here, salaries aren't right
     # salary_tags = [tag.get_text() for tag in salary_data.find_all("em")]
     salary_tags = [
         "All - Avg",
@@ -63,7 +62,6 @@ def get_ottoneu_player_page(player_id, lg_id):
         "H2H - Med - L10",
     ]
     salary_nums = [num.get_text() for num in salary_data.find_all("span")][:-2]
-    # foo
     for tag, num in zip(salary_tags, salary_nums):
         player_page_dict[tag] = num
     return player_page_dict

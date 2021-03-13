@@ -4,7 +4,6 @@
 # v2: scrape RoS steamer / zips projections
 import requests
 from bs4 import BeautifulSoup
-from json2table import convert
 from pybaseball import (
     statcast_batter_exitvelo_barrels,
     playerid_lookup,
@@ -19,29 +18,32 @@ def main():
     league_id = "953"  # put this in env
     base_url = "https://ottoneu.fangraphs.com"
     current_year = 2020
-    auction_url = f"{base_url}/{league_id}/transactions"
-    # for testing
-    auction_url = "https://ottoneu.fangraphs.com/953/transactions?filters%5B%5D=cut&filters%5B%5D=increase"
+    auction_url = f"{base_url}/{league_id}/auctions"
     resp = requests.get(auction_url)
     soup = BeautifulSoup(resp.content, "html.parser")
-    table = soup.find("table")
-    thead = [th.get_text() for th in table.find("thead").find_all("th")]
+    auctions = soup.find("main").find("section").find("div", {"class":"table-container"}).find("table").find_all("tr")
+    headers = [th.get_text().strip() for th in auctions.pop(0).find_all("th")]
 
     auction_players = list()
-    for tr in tqdm(table.find("tbody").find_all("tr")[30:]):
-        player_data = [td.get_text().strip() for td in tr.find_all("td")]
-        player_page_url = [
-            a["href"] for a in tr.find_all("a") if "playercard" in a["href"]
-        ].pop()
-        player_dict = dict(zip(thead, player_data))
-        if player_dict["Transaction Type"] != "add":
-            continue
+    for elem in tqdm(auctions):
+        player_dict = dict()
+        # player_name
+        player_dict["Player Name"] = elem.find("a").get_text().strip()
+        player_page_url = elem.find("a")["href"]
+        player_info = elem.find("span").get_text().split()
+        player_dict["Team"] = player_info.pop()
+        if len(player_info)==3:
+            # if the player is MiLB, then remove the level
+            player_info.pop()
+        player_dict["Position"] = player_info.pop()
+        player_dict["Hand"] = player_info.pop()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
         player_salary_dict = get_ottoneu_player_page(
             player_dict["ottoneu_id"], league_id
         )
         player_dict.update(player_salary_dict)
 
+        # turn this piece into a method?
         player_name = clean_name(player_dict["Player Name"])
         first_name, last_name = player_name.split(maxsplit=1)
 
@@ -57,7 +59,7 @@ def main():
             else:
                 player_dict["mlbam_id"] = id_lookup.key_mlbam.values[0]
 
-        is_hitter, is_pitcher = get_position_group(player_dict["positions"])
+        is_hitter, is_pitcher = get_position_group(player_dict["Position"])
         player_dict["is_hitter"] = is_hitter
         player_dict["is_pitcher"] = is_pitcher
 
