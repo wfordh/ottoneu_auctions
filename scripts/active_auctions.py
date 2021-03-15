@@ -2,6 +2,7 @@
 # get auctions started and players cut from that day
 # using pybaseball, scrape statcast info
 # v2: scrape RoS steamer / zips projections
+from datetime import date
 import requests
 from bs4 import BeautifulSoup
 from pybaseball import (
@@ -26,6 +27,9 @@ def main():
 
     auction_players = list()
     for elem in tqdm(auctions):
+        # workaround for days with no auctions
+        if elem.get_text() == "No auctions are active at this time":
+            break
         player_dict = dict()
         # player_name
         player_dict["Player Name"] = elem.find("a").get_text().strip()
@@ -87,7 +91,7 @@ def main():
             player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
 
     if pitchers:
-        # currently pybaseball only has individual pitcher data
+        # what to add for pitchers?
         pass
 
     html = format_html(hitters, pitchers)
