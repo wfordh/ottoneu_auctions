@@ -8,11 +8,16 @@ from bs4 import BeautifulSoup
 from pybaseball import (
     statcast_batter_exitvelo_barrels,
     playerid_lookup,
-    statcast_pitcher,
+    statcast_pitcher_exitvelo_barrels,
     cache,
 )
 from tqdm import tqdm
-from auction_utils import clean_name, get_ottoneu_player_page, get_position_group, format_html
+from auction_utils import (
+    clean_name,
+    get_ottoneu_player_page,
+    get_position_group,
+    format_html,
+)
 
 
 def main():
@@ -22,25 +27,31 @@ def main():
     auction_url = f"{base_url}/{league_id}/auctions"
     resp = requests.get(auction_url)
     soup = BeautifulSoup(resp.content, "html.parser")
-    auctions = soup.find("main").find("section").find("div", {"class":"table-container"}).find("table").find_all("tr")
+    auctions = (
+        soup.find("main")
+        .find("section")
+        .find("div", {"class": "table-container"})
+        .find("table")
+        .find_all("tr")
+    )
     headers = [th.get_text().strip() for th in auctions.pop(0).find_all("th")]
 
     auction_players = list()
     for elem in tqdm(auctions):
         # workaround for days with no auctions
-        if elem.get_text() == "No auctions are active at this time":
+        if elem.find("a") is None:
             break
         player_dict = dict()
         # player_name
         player_dict["Player Name"] = elem.find("a").get_text().strip()
         player_page_url = elem.find("a")["href"]
         player_info = elem.find("span").get_text().split()
-        player_dict["Team"] = player_info.pop()
-        if len(player_info)==3:
+        player_dict["Hand"] = player_info.pop()
+        if len(player_info) == 3:
             # if the player is MiLB, then remove the level
             player_info.pop()
         player_dict["Position"] = player_info.pop()
-        player_dict["Hand"] = player_info.pop()
+        player_dict["Team"] = player_info.pop()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
         player_salary_dict = get_ottoneu_player_page(
             player_dict["ottoneu_id"], league_id
@@ -94,12 +105,31 @@ def main():
         # what to add for pitchers?
         pass
 
+    hitter_columns = [
+        "Player Name",
+        "Hand",
+        "Position",
+        "Hand",
+        "is_mlb",
+        "All - Avg",
+        "All - Med",
+        "H2H - Avg",
+        "H2H - Med",
+        "All - Avg - L10",
+        "All - Med - L10",
+        "H2H - Avg - L10",
+        "H2H - Med - L10",
+        "avg_exit_velo",
+        "max_exit_velo",
+        "barrel_pa_rate",
+        "barrel_bbe_rate",
+    ]
+
     html = format_html(hitters, pitchers)
     print(html)
 
     # get names via lookup. use cache.enable() for pybaseball here?
     # get statcast data for individual players or for league and then search for players?
-
 
 
 if __name__ == "__main__":
