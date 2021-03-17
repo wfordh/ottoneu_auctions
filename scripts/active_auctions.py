@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 from pybaseball import (
     statcast_batter_exitvelo_barrels,
     playerid_lookup,
-    statcast_pitcher_exitvelo_barrels,
     cache,
 )
 from tqdm import tqdm
