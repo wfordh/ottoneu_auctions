@@ -2,6 +2,7 @@
 # get auctions started and players cut from that day
 # using pybaseball, scrape statcast info
 # v2: scrape RoS steamer / zips projections
+import argparse
 from datetime import date
 import requests
 from bs4 import BeautifulSoup
@@ -18,11 +19,20 @@ from auction_utils import (
     format_html,
 )
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-l", "--league", help="The league id of interest", required=True)
+
 
 def main():
-    league_id = "953"  # put this in env
+    args = parser.parse_args()
+    command_args = dict(vars(args))
+    league_id = command_args.pop("league", None)
     base_url = "https://ottoneu.fangraphs.com"
-    current_year = 2020
+    today = date.today()
+    if today.month < 4:
+        current_year = today.year - 1
+    else:
+        current_year = today.year
     auction_url = f"{base_url}/{league_id}/auctions"
     resp = requests.get(auction_url)
     soup = BeautifulSoup(resp.content, "html.parser")
