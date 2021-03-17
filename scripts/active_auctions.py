@@ -127,7 +127,7 @@ def main():
         "barrel_bbe_rate",
     ]
 
-    hitters = {k:v for k, v in hitters.items() if k in hitter_columns}
+    hitters = [{k:v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters]
 
     html = format_html(hitters, pitchers)
     print(html)
