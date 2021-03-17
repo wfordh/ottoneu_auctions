@@ -139,7 +139,7 @@ def main():
 
     hitters = [{k:v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters]
 
-    html = format_html(hitters, pitchers)
+    html = format_html(hitters, pitchers, league_id)
     print(html)
 
     # get names via lookup. use cache.enable() for pybaseball here?
