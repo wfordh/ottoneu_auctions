@@ -70,8 +70,10 @@ def main():
                 player_dict["mlbam_id"] = id_lookup.loc[
                     id_lookup.mlb_played_last == id_lookup.mlb_played_last.max()
                 ].key_mlbam.values[0]
-            else:
+            elif id_lookup.shape[0] == 1:
                 player_dict["mlbam_id"] = id_lookup.key_mlbam.values[0]
+            else:
+                player_dict["mlbam_id"] = None
 
         is_hitter, is_pitcher = get_position_group(player_dict["Position"])
         player_dict["is_hitter"] = is_hitter
@@ -86,8 +88,9 @@ def main():
         # get rid of this indentation and just pull exit velo #s regardless?
         exit_velo_data = statcast_batter_exitvelo_barrels(current_year, minBBE=0)
         for player in hitters:
-            if not player["is_mlb"]:
+            if not player["is_mlb"] or not player["mlbam_id"]:
                 # avoid index error for minor leaguers
+                print(player["Player Name"])
                 continue
             player_exit_velo = (
                 exit_velo_data.loc[exit_velo_data.player_id == player["mlbam_id"]]
@@ -123,6 +126,8 @@ def main():
         "barrel_pa_rate",
         "barrel_bbe_rate",
     ]
+
+    hitters = {k:v for k, v in hitters.items() if k in hitter_columns}
 
     html = format_html(hitters, pitchers)
     print(html)
