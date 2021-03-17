@@ -8,14 +8,14 @@ import json
 def dict_to_html(records):
     return pd.DataFrame.from_records(records).to_html().replace("\n", "")
 
-def format_html(hitters, pitchers):
+def format_html(hitters, pitchers, league_id):
     hitters_html = dict_to_html(hitters)
     pitchers_html = dict_to_html(pitchers)
     html = f"""
     <!doctype html>
     <html>
     <body>
-    <h1>Ottoneu Auctions - <a href="https://ottoneu.fangraphs.com/953/home">League 953</a></h1>
+    <h1>Ottoneu Auctions - <a href="https://ottoneu.fangraphs.com/{league_id}/home">League {league_id}</a></h1>
     <h2> Hitters </h2>
     {hitters_html}
     <h2> Pitchers </h2>
