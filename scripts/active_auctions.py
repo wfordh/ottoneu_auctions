@@ -136,8 +136,24 @@ def main():
         "barrel_pa_rate",
         "barrel_bbe_rate",
     ]
+    pitcher_columns = [
+        "Player Name",
+        "Hand",
+        "Position",
+        "Hand",
+        "is_mlb",
+        "All - Avg",
+        "All - Med",
+        "H2H - Avg",
+        "H2H - Med",
+        "All - Avg - L10",
+        "All - Med - L10",
+        "H2H - Avg - L10",
+        "H2H - Med - L10",
+    ] 
 
     hitters = [{k:v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters]
+    pitchers = [{k:v for k, v in pitcher.items() if k in pitcher_columns} for pitcher in pitchers]
 
     html = format_html(hitters, pitchers, league_id)
     print(html)
