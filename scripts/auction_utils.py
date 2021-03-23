@@ -20,6 +20,7 @@ def format_html(hitters, pitchers, league_id):
     {hitters_html}
     <h2> Pitchers </h2>
     {pitchers_html}
+    <footer><a href="https://wfordh.github.io/ottoneu_auctions">Home</a></footer>
     </body>
     </html>
     """
