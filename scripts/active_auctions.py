@@ -8,6 +8,10 @@ import requests
 from bs4 import BeautifulSoup
 from pybaseball import (
     statcast_batter_exitvelo_barrels,
+    statcast_batter_percentile_ranks,
+    statcast_batter_expected_stats,
+    statcast_pitcher_expected_stats,
+    statcast_pitcher_percentile_ranks,
     playerid_lookup,
     cache,
 )
@@ -58,7 +62,7 @@ def main():
         player_dict["Hand"] = player_info.pop()
         if len(player_info) == 3:
             # if the player is MiLB, then remove the level
-            player_info.pop()
+            player_info.pop(0)
         player_dict["Position"] = player_info.pop()
         player_dict["Team"] = player_info.pop()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
@@ -97,25 +101,60 @@ def main():
         # setting minBBE = 0 to avoid not getting someone
         # get rid of this indentation and just pull exit velo #s regardless?
         exit_velo_data = statcast_batter_exitvelo_barrels(current_year, minBBE=0)
+        percentile_ranks = statcast_batter_percentile_ranks(current_year)
+        exp_stats = statcast_batter_expected_stats(current_year, minPA=0)
         for player in hitters:
             if not player["is_mlb"] or not player["mlbam_id"]:
                 # avoid index error for minor leaguers
-                print(player["Player Name"])
                 continue
             player_exit_velo = (
                 exit_velo_data.loc[exit_velo_data.player_id == player["mlbam_id"]]
                 .to_dict("records")
                 .pop()
             )
-            # add anything else?
+            player_pctl_ranks = (
+                percentile_ranks.loc[percentile_ranks.player_id == player["mlbam_id"]]
+                .to_dict("records")
+                .pop()
+            )
+            player_exp_stats = (
+                exp_stats.loc[exp_stats.player_id == player["mlbam_id"]]
+                .to_dict("records")
+                .pop()
+            )
             player["avg_exit_velo"] = player_exit_velo["avg_hit_speed"]
             player["max_exit_velo"] = player_exit_velo["max_hit_speed"]
+            player["exit_velo_pctl"] = player_pctl_ranks["exit_velocity"]
             player["barrel_pa_rate"] = player_exit_velo["brl_pa"]
             player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
+            player["barrel_bbe_pctl"] = player_pctl_ranks["brl_percent"]
+            player["xwoba"] = player_exp_stats["xwoba"]
+            player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
+            player["xwoba_pctl"] = player_pctl_ranks["xwoba"]
 
     if pitchers:
         # what to add for pitchers?
-        pass
+        percentile_ranks = statcast_pitcher_percentile_ranks(current_year)
+        exp_stats = statcast_pitcher_expected_stats(current_year, 0)
+        for player in pitchers:
+            if not player["is_mlb"] or not player["mlbam_id"]:
+                continue
+            player_pctl_ranks = (
+                percentile_ranks.loc[percentile_ranks.player_id == player["mlbam_id"]]
+                .to_dict("records")
+                .pop()
+            )
+            player_exp_stats = (
+                exp_stats.loc[exp_stats.player_id == player["mlbam_id"]]
+                .to_dict("records")
+                .pop()
+            )
+            player["k_pctl"] = player_pctl_ranks["k_percent"]
+            player["bb_pctl"] = player_pctl_ranks["bb_percent"]
+            player["whiff_pctl"] = player_pctl_ranks["whiff_percent"]
+            player["xwoba"] = player_exp_stats["xwoba"]
+            player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
+            player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
 
     hitter_columns = [
         "Player Name",
@@ -133,8 +172,13 @@ def main():
         "H2H - Med - L10",
         "avg_exit_velo",
         "max_exit_velo",
+        "exit_velo_pctl",
         "barrel_pa_rate",
         "barrel_bbe_rate",
+        "barrel_bbe_pctl",
+        "xwoba",
+        "woba_diff",
+        "xwoba_pctl",
     ]
     pitcher_columns = [
         "Player Name",
@@ -150,10 +194,21 @@ def main():
         "All - Med - L10",
         "H2H - Avg - L10",
         "H2H - Med - L10",
-    ] 
+        "k_pctl",
+        "bb_pctl",
+        "whiff_pctl",
+        "xwoba",
+        "woba_diff",
+        "era_diff",
+    ]
 
-    hitters = [{k:v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters]
-    pitchers = [{k:v for k, v in pitcher.items() if k in pitcher_columns} for pitcher in pitchers]
+    hitters = [
+        {k: v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters
+    ]
+    pitchers = [
+        {k: v for k, v in pitcher.items() if k in pitcher_columns}
+        for pitcher in pitchers
+    ]
 
     html = format_html(hitters, pitchers, league_id)
     print(html)
