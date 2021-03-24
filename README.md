@@ -13,4 +13,4 @@ The script pulls the active auctions for the league each day at approximately 7 
 - Stretch goal for this project is to make it possible to enter your league number and get that day's auctions, which effectively extends it to any league. Streamlit and PyWebIO are options.
 - Refactor so logic and UI are more effectively split. May require making a class
 - Curate columns for HTML more
-- Add Fangraphs' projections for RoS.
+- Add Fangraphs' projections for RoS. Preferably an average of Depth Charts, ZiPS, Steamer, and THE BAT, converted to the FG Points system for Ottoneu.
