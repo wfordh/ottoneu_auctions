@@ -11,3 +11,4 @@ This repository runs a script to help decision making in free agent auctions for
 - Stretch goal for this project is to make it possible to enter your league number and get that day's auctions, which effectively extends it to any league. Streamlit and PyWebIO are options.
 - Refactor so logic and UI are more effectively split. May require making a class
 - Curate columns for HTML more
+- Add Fangraphs' projections for RoS
