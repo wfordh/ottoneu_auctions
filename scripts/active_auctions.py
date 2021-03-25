@@ -7,13 +7,17 @@ from datetime import date
 import requests
 from bs4 import BeautifulSoup
 from pybaseball import (
+    playerid_lookup,
+    cache,
+)
+from pybaseball.statcast_batter import (
     statcast_batter_exitvelo_barrels,
     statcast_batter_percentile_ranks,
     statcast_batter_expected_stats,
+)
+from pybaseball.statcast_pitcher import (
     statcast_pitcher_expected_stats,
     statcast_pitcher_percentile_ranks,
-    playerid_lookup,
-    cache,
 )
 from tqdm import tqdm
 from auction_utils import (
@@ -128,7 +132,7 @@ def main():
             player["barrel_pa_rate"] = player_exit_velo["brl_pa"]
             player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
             player["barrel_bbe_pctl"] = player_pctl_ranks["brl_percent"]
-            player["xwoba"] = player_exp_stats["xwoba"]
+            player["xwoba"] = player_exp_stats["est_woba"]
             player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
             player["xwoba_pctl"] = player_pctl_ranks["xwoba"]
 
@@ -152,7 +156,7 @@ def main():
             player["k_pctl"] = player_pctl_ranks["k_percent"]
             player["bb_pctl"] = player_pctl_ranks["bb_percent"]
             player["whiff_pctl"] = player_pctl_ranks["whiff_percent"]
-            player["xwoba"] = player_exp_stats["xwoba"]
+            player["xwoba"] = player_exp_stats["est_woba"]
             player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
             player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
 
