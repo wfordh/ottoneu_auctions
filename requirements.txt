@@ -7,7 +7,6 @@
 
 -i https://pypi.org/simple
 appdirs==1.4.4
-attr==0.3.1
 beautifulsoup4==4.9.3
 black==20.8b1
 bs4==0.0.1
