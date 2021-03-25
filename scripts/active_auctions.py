@@ -6,7 +6,7 @@ import argparse
 from datetime import date
 import requests
 from bs4 import BeautifulSoup
-from pybaseball import playerid_lookup
+from pybaseball.playerid_lookup import *
 from pybaseball.statcast_batter import (
     statcast_batter_exitvelo_barrels,
     statcast_batter_percentile_ranks,
