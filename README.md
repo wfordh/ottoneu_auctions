@@ -14,3 +14,4 @@ The script pulls the active auctions for the league each day at approximately 7 
 - Refactor so logic and UI are more effectively split. May require making a class
 - Curate columns for HTML more
 - Add Fangraphs' projections for RoS. Preferably an average of Depth Charts, ZiPS, Steamer, and THE BAT, converted to the FG Points system for Ottoneu.
+- Add players on waivers
