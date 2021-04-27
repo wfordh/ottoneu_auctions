@@ -10,8 +10,9 @@ The script pulls the active auctions for the league each day at approximately 7 
 
 ## TO DO
 - Figure out why `playerid_lookup()` prints the message each time. Either get it to stop printing each time or find a way to filter that out of the web page.
-- Stretch goal for this project is to make it possible to enter your league number and get that day's auctions, which effectively extends it to any league. Streamlit and PyWebIO are options.
+- Stretch goal for this project is to make it possible to enter your league number and get that day's auctions, which effectively extends it to any league. Streamlit, [hex](https://hex.tech/) and PyWebIO are options.
 - Refactor so logic and UI are more effectively split. May require making a class
 - Curate columns for HTML more
 - Add Fangraphs' projections for RoS. Preferably an average of Depth Charts, ZiPS, Steamer, and THE BAT, converted to the FG Points system for Ottoneu.
 - Add players on waivers
+- Change percentiles to ints instead of floats
