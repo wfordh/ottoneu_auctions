@@ -1,3 +1,4 @@
+import datetime
 import re
 from time import sleep
 import pandas as pd
@@ -29,6 +30,11 @@ def format_html(hitters, pitchers, league_id):
 def get_ottoneu_player_page(player_id, lg_id):
     sleep(1.1)
     player_page_dict = dict()
+    today = datetime.date.today()
+    if today.month < 4:
+        current_year = today.year - 1
+    else:
+        current_year = today.year
     url = f"https://ottoneu.fangraphs.com/{lg_id}/playercard"
     r = requests.get(url, params={"id": player_id})
     soup = BeautifulSoup(r.content, "html.parser")
@@ -41,7 +47,8 @@ def get_ottoneu_player_page(player_id, lg_id):
     if "(" in level_data or len(level_data.split()) == 2:
         player_page_dict["is_mlb"] = False
     else:
-        player_page_dict["is_mlb"] = True
+        latest_year = int(soup.find("main").find("section", {"class": "section-container"}).find("table").find_all("tr")[-1].find("td").get_text())
+        player_page_dict["is_mlb"] = True if latest_year == current_year else False
     # player_page_dict["is_mlb"] = False if "(" in level_data else True
     salary_data = header_data.find("div", {"class": "page-header__secondary"})
     player_page_dict["positions"] = (
