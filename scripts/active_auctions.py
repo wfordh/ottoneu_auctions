@@ -22,9 +22,11 @@ from pybaseball.statcast_pitcher import (
 from tqdm import tqdm
 from auction_utils import (
     clean_name,
+    get_league_scoring,
     get_ottoneu_player_page,
     get_position_group,
     format_html,
+    safe_int,
 )
 
 parser = argparse.ArgumentParser()
@@ -41,6 +43,7 @@ def main():
         current_year = today.year - 1
     else:
         current_year = today.year
+    scoring_system = get_league_scoring(league_id)
     auction_url = f"{base_url}/{league_id}/auctions"
     resp = requests.get(auction_url)
     soup = BeautifulSoup(resp.content, "html.parser")
@@ -71,7 +74,7 @@ def main():
         player_dict["Team"] = player_info.pop()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
         player_salary_dict = get_ottoneu_player_page(
-            player_dict["ottoneu_id"], league_id
+            player_dict["ottoneu_id"], league_id, scoring_system
         )
         player_dict.update(player_salary_dict)
 
@@ -128,13 +131,13 @@ def main():
             )
             player["avg_exit_velo"] = player_exit_velo["avg_hit_speed"]
             player["max_exit_velo"] = player_exit_velo["max_hit_speed"]
-            player["exit_velo_pctl"] = player_pctl_ranks["exit_velocity"]
+            player["exit_velo_pctl"] = safe_int(player_pctl_ranks["exit_velocity"])
             player["barrel_pa_rate"] = player_exit_velo["brl_pa"]
             player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
-            player["barrel_bbe_pctl"] = player_pctl_ranks["brl_percent"]
+            player["barrel_bbe_pctl"] = safe_int(player_pctl_ranks["brl_percent"])
             player["xwoba"] = player_exp_stats["est_woba"]
             player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
-            player["xwoba_pctl"] = player_pctl_ranks["xwoba"]
+            player["xwoba_pctl"] = safe_int(player_pctl_ranks["xwoba"])
 
     if pitchers:
         # what to add for pitchers?
@@ -153,9 +156,9 @@ def main():
                 .to_dict("records")
                 .pop()
             )
-            player["k_pctl"] = player_pctl_ranks["k_percent"]
-            player["bb_pctl"] = player_pctl_ranks["bb_percent"]
-            player["whiff_pctl"] = player_pctl_ranks["whiff_percent"]
+            player["k_pctl"] = safe_int(player_pctl_ranks["k_percent"])
+            player["bb_pctl"] = safe_int(player_pctl_ranks["bb_percent"])
+            player["whiff_pctl"] = safe_int(player_pctl_ranks["whiff_percent"])
             player["xwoba"] = player_exp_stats["est_woba"]
             player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
             player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
@@ -168,12 +171,12 @@ def main():
         "is_mlb",
         "All - Avg",
         "All - Med",
-        "H2H - Avg",
-        "H2H - Med",
+        f"{scoring_system} - Avg",
+        f"{scoring_system} - Med",
         "All - Avg - L10",
         "All - Med - L10",
-        "H2H - Avg - L10",
-        "H2H - Med - L10",
+        f"{scoring_system} - Avg - L10",
+        f"{scoring_system} - Med - L10",
         "avg_exit_velo",
         "max_exit_velo",
         "exit_velo_pctl",
@@ -192,12 +195,12 @@ def main():
         "is_mlb",
         "All - Avg",
         "All - Med",
-        "H2H - Avg",
-        "H2H - Med",
+        f"{scoring_system} - Avg",
+        f"{scoring_system} - Med",
         "All - Avg - L10",
         "All - Med - L10",
-        "H2H - Avg - L10",
-        "H2H - Med - L10",
+        f"{scoring_system} - Avg - L10",
+        f"{scoring_system} - Med - L10",
         "k_pctl",
         "bb_pctl",
         "whiff_pctl",

@@ -6,8 +6,39 @@ import requests
 from bs4 import BeautifulSoup
 import json
 
+
+def get_league_scoring(league_id):
+    scoring_map = {
+        "FanGraphs Points": "FGP",
+        "H2H FanGraphs Points": "H2H FGP",
+    }
+    url = f"https://ottoneu.fangraphs.com/{league_id}/settings"
+    r = requests.get(url)
+    soup = BeautifulSoup(r.content, "html.parser")
+    rows = soup.find("main").find("table").find_all("tr")[1:]
+    settings = {
+        row.find_all("td")[0]
+        .get_text()
+        .strip(): row.find_all("td")[1]
+        .get_text()
+        .strip()
+        for row in rows
+    }
+    scoring_system = settings.get("Scoring System")
+    return scoring_map.get(scoring_system)
+
+
+def safe_int(data):
+    try:
+        data = int(data)
+    except ValueError:
+        pass
+    return data
+
+
 def dict_to_html(records):
     return pd.DataFrame.from_records(records).to_html().replace("\n", "")
+
 
 def format_html(hitters, pitchers, league_id):
     hitters_html = dict_to_html(hitters)
@@ -27,7 +58,8 @@ def format_html(hitters, pitchers, league_id):
     """
     return html
 
-def get_ottoneu_player_page(player_id, lg_id):
+
+def get_ottoneu_player_page(player_id, lg_id, lg_scoring):
     sleep(1.1)
     player_page_dict = dict()
     today = datetime.date.today()
@@ -47,7 +79,14 @@ def get_ottoneu_player_page(player_id, lg_id):
     if "(" in level_data or len(level_data.split()) == 2:
         player_page_dict["is_mlb"] = False
     else:
-        latest_year = int(soup.find("main").find("section", {"class": "section-container"}).find("table").find_all("tr")[-1].find("td").get_text())
+        latest_year = int(
+            soup.find("main")
+            .find("section", {"class": "section-container"})
+            .find("table")
+            .find_all("tr")[-1]
+            .find("td")
+            .get_text()
+        )
         player_page_dict["is_mlb"] = True if latest_year == current_year else False
     # player_page_dict["is_mlb"] = False if "(" in level_data else True
     salary_data = header_data.find("div", {"class": "page-header__secondary"})
@@ -59,15 +98,20 @@ def get_ottoneu_player_page(player_id, lg_id):
         .rsplit(maxsplit=1)[1]
     )
     # salary_tags = [tag.get_text() for tag in salary_data.find_all("em")]
+    league_points = salary_data.find_all("p")[1].find_all("strong")[1].get_text()
+    points_map = {
+        "FanGraphs Points": "FGP",
+        "H2H FanGraphs Points": "H2H FGP",
+    }
     salary_tags = [
         "All - Avg",
         "All - Med",
-        "H2H - Avg",
-        "H2H - Med",
+        f"{lg_scoring} - Avg",
+        f"{lg_scoring} - Med",
         "All - Avg - L10",
         "All - Med - L10",
-        "H2H - Avg - L10",
-        "H2H - Med - L10",
+        f"{lg_scoring} - Avg - L10",
+        f"{lg_scoring} - Med - L10",
     ]
     salary_nums = [num.get_text() for num in salary_data.find_all("span")][:-2]
     for tag, num in zip(salary_tags, salary_nums):
