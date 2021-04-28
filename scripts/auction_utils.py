@@ -37,7 +37,8 @@ def safe_int(data):
 
 
 def dict_to_html(records):
-    return pd.DataFrame.from_records(records).to_html().replace("\n", "")
+    df = pd.DataFrame.from_records(records)
+    return df.to_html().replace("\n", "")
 
 
 def format_html(hitters, pitchers, league_id):
