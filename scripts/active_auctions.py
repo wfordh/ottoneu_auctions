@@ -66,12 +66,17 @@ def main():
         player_dict["Player Name"] = elem.find("a").get_text().strip()
         player_page_url = elem.find("a")["href"]
         player_info = elem.find("span").get_text().split()
-        player_dict["Hand"] = player_info.pop()
-        if len(player_info) == 3:
-            # if the player is MiLB, then remove the level
-            player_info.pop(0)
-        player_dict["Position"] = player_info.pop()
-        player_dict["Team"] = player_info.pop()
+        if "N/A" not in player_info:
+            player_dict["Hand"] = player_info.pop()
+            if len(player_info) == 3:
+                # if the player is MiLB, then remove the level
+                player_info.pop(0)
+            player_dict["Position"] = player_info.pop()
+            player_dict["Team"] = player_info.pop()
+        else:
+            player_dict["Hand"] = None
+            player_dict["Position"] = "UTIL"
+            player_dict["Team"] = None
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
         player_salary_dict = get_ottoneu_player_page(
             player_dict["ottoneu_id"], league_id, scoring_system
