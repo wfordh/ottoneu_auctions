@@ -15,4 +15,5 @@ The script pulls the active auctions for the league each day at approximately 7 
 - Curate columns for HTML more
 - Add Fangraphs' projections for RoS. Preferably an average of Depth Charts, ZiPS, Steamer, and THE BAT, converted to the FG Points system for Ottoneu.
 - Add players on waivers
-- Change percentiles to ints instead of floats
+- Change percentiles to ints instead of floats. Not currently possible b/c of `NaN` percentiles
+- Add plate appearances and IP for MLB players 
