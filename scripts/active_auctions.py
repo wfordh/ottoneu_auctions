@@ -119,21 +119,22 @@ def main():
             if not player["is_mlb"] or not player["mlbam_id"]:
                 # avoid index error for minor leaguers
                 continue
-            player_exit_velo = (
-                exit_velo_data.loc[exit_velo_data.player_id == player["mlbam_id"]]
-                .to_dict("records")
-                .pop()
+            exit_velo = exit_velo_data.loc[
+                exit_velo_data.player_id == player["mlbam_id"]
+            ].to_dict("records")
+            # if exit velo doesn't exist, then no statcast data for player and therefore continue?
+            if not exit_velo:
+                continue
+            player_exit_velo = exit_velo.pop()
+            # if this works, then don't need the adjustments below?
+            pctl_ranks = percentile_ranks.loc[
+                percentile_ranks.player_id == player["mlbam_id"]
+            ].to_dict("records")
+            player_pctl_ranks = pctl_ranks.pop() if pctl_ranks else None
+            x_stats = exp_stats.loc[exp_stats.player_id == player["mlbam_id"]].to_dict(
+                "records"
             )
-            player_pctl_ranks = (
-                percentile_ranks.loc[percentile_ranks.player_id == player["mlbam_id"]]
-                .to_dict("records")
-                .pop()
-            )
-            player_exp_stats = (
-                exp_stats.loc[exp_stats.player_id == player["mlbam_id"]]
-                .to_dict("records")
-                .pop()
-            )
+            player_exp_stats = x_stats.pop() if x_stats else None
             player["avg_exit_velo"] = player_exit_velo["avg_hit_speed"]
             player["max_exit_velo"] = player_exit_velo["max_hit_speed"]
             player["exit_velo_pctl"] = safe_int(player_pctl_ranks["exit_velocity"])
@@ -151,16 +152,18 @@ def main():
         for player in pitchers:
             if not player["is_mlb"] or not player["mlbam_id"]:
                 continue
-            player_pctl_ranks = (
-                percentile_ranks.loc[percentile_ranks.player_id == player["mlbam_id"]]
-                .to_dict("records")
-                .pop()
+            pctl_ranks = percentile_ranks.loc[
+                percentile_ranks.player_id == player["mlbam_id"]
+            ].to_dict("records")
+            # in case no statcast available
+            if not pctl_ranks:
+                continue
+            player_pctl_ranks = pctl_ranks.pop() if pctl_ranks else None
+            x_stats = exp_stats.loc[exp_stats.player_id == player["mlbam_id"]].to_dict(
+                "records"
             )
-            player_exp_stats = (
-                exp_stats.loc[exp_stats.player_id == player["mlbam_id"]]
-                .to_dict("records")
-                .pop()
-            )
+            player_exp_stats = x_stats.pop() if x_stats else None
+
             player["k_pctl"] = safe_int(player_pctl_ranks["k_percent"])
             player["bb_pctl"] = safe_int(player_pctl_ranks["bb_percent"])
             player["whiff_pctl"] = safe_int(player_pctl_ranks["whiff_percent"])
