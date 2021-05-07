@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+black = "*"
+bs4 = "*"
+requests = "*"
+pybaseball = "*"
+tqdm = "*"
+attr = "*"
+lxml = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.7.1"
+
+[pipenv]
+allow_prereleases = true
