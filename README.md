@@ -18,3 +18,4 @@ The script pulls the active auctions for the league each day at approximately 7 
 - Change percentiles to ints instead of floats. Not currently possible b/c of `NaN` percentiles
 - Add plate appearances and IP for MLB players 
 - Get better check to see if statcast data available for player's current year
+- Safely fail individual players so that the run itself doesn't fail
