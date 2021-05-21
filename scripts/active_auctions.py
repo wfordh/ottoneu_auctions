@@ -77,6 +77,7 @@ def main():
             player_dict["Hand"] = None
             player_dict["Position"] = "UTIL"
             player_dict["Team"] = None
+        player_dict["min_bid"] = elem.find_all("td")[-1].get_text()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
         player_salary_dict = get_ottoneu_player_page(
             player_dict["ottoneu_id"], league_id, scoring_system
@@ -177,14 +178,11 @@ def main():
         "Position",
         "Hand",
         "is_mlb",
-        "All - Avg",
-        "All - Med",
+        "min_bid",
         f"{scoring_system} - Avg",
         f"{scoring_system} - Med",
-        "All - Avg - L10",
-        "All - Med - L10",
-        f"{scoring_system} - Avg - L10",
-        f"{scoring_system} - Med - L10",
+        f"{scoring_system} - L10 Avg",
+        f"{scoring_system} - L10 Med",
         "avg_exit_velo",
         "max_exit_velo",
         "exit_velo_pctl",
@@ -201,14 +199,11 @@ def main():
         "Position",
         "Hand",
         "is_mlb",
-        "All - Avg",
-        "All - Med",
+        "min_bid",
         f"{scoring_system} - Avg",
         f"{scoring_system} - Med",
-        "All - Avg - L10",
-        "All - Med - L10",
-        f"{scoring_system} - Avg - L10",
-        f"{scoring_system} - Med - L10",
+        f"{scoring_system} - L10 Avg",
+        f"{scoring_system} - L10 Med",
         "k_pctl",
         "bb_pctl",
         "whiff_pctl",
