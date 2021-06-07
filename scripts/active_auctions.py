@@ -79,10 +79,14 @@ def main():
             player_dict["Team"] = None
         player_dict["min_bid"] = elem.find_all("td")[-1].get_text()
         player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
-        player_salary_dict = get_ottoneu_player_page(
-            player_dict["ottoneu_id"], league_id, scoring_system
-        )
-        player_dict.update(player_salary_dict)
+
+        is_hitter, is_pitcher = get_position_group(player_dict["Position"])
+        player_dict["is_hitter"] = is_hitter
+        player_dict["is_pitcher"] = is_pitcher
+
+        # why not just get the position groups here and pass whole dict in?
+        player_dict = get_ottoneu_player_page(player_dict, league_id, scoring_system)
+        #        player_dict.update(player_salary_dict)
 
         # turn this piece into a method?
         player_name = clean_name(player_dict["Player Name"])
@@ -178,6 +182,8 @@ def main():
         "Position",
         "Hand",
         "is_mlb",
+        "pts_g",
+        "pa",
         "min_bid",
         f"{scoring_system} - Avg",
         f"{scoring_system} - Med",
@@ -199,6 +205,8 @@ def main():
         "Position",
         "Hand",
         "is_mlb",
+        "pts_ip",
+        "ip",
         "min_bid",
         f"{scoring_system} - Avg",
         f"{scoring_system} - Med",

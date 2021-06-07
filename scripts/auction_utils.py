@@ -60,7 +60,7 @@ def format_html(hitters, pitchers, league_id):
     return html
 
 
-def get_ottoneu_player_page(player_id, lg_id, lg_scoring):
+def get_ottoneu_player_page(player_dict, lg_id, lg_scoring):
     sleep(1.1)
     player_page_dict = dict()
     today = datetime.date.today()
@@ -69,7 +69,7 @@ def get_ottoneu_player_page(player_id, lg_id, lg_scoring):
     else:
         current_year = today.year
     url = f"https://ottoneu.fangraphs.com/{lg_id}/playercard"
-    r = requests.get(url, params={"id": player_id})
+    r = requests.get(url, params={"id": player_dict["ottoneu_id"]})
     soup = BeautifulSoup(r.content, "html.parser")
     header_data = soup.find("main").find("header", {"class": "page-header"})
     level_data = (
@@ -118,10 +118,22 @@ def get_ottoneu_player_page(player_id, lg_id, lg_scoring):
     for tag, num in zip(salary_tags, salary_nums):
         player_page_dict[tag] = num
 
-    player_stats = soup.find("main").find("section", {"class":"section-container"}).find("table")
+    player_stats = (
+        soup.find("main").find("section", {"class": "section-container"}).find("table")
+    )
     if player_page_dict["is_mlb"]:
-        player_page_dict["avg_pts"] = player_stats.find_all("tr")[-1].find_all("td")[-2].get_text()
-    return player_page_dict
+        # will need to adjust for players with more than one team in year aka same as minor leaguers
+        current_stats = player_stats.find_all("tr")[-1].find_all("td")
+        avg_pts = current_stats[-2].get_text()
+        if player_dict["is_hitter"] and not player_dict["is_pitcher"]:
+            player_dict["pts_g"] = avg_pts
+            player_dict["pa"] = current_stats[3].get_text()
+        elif player_dict["is_pitcher"] and not player_dict["is_hitter"]:
+            player_dict["pts_ip"] = avg_pts
+            player_dict["ip"] = current_stats[4].get_text()
+    # probably just change all references to player_page_dict to player_dict above to avoid the update
+    player_dict.update(player_page_dict)
+    return player_dict
 
 
 def clean_name(player_name):
