@@ -117,6 +117,10 @@ def get_ottoneu_player_page(player_id, lg_id, lg_scoring):
     salary_nums = [num.get_text() for num in salary_data.find_all("span")][:-2]
     for tag, num in zip(salary_tags, salary_nums):
         player_page_dict[tag] = num
+
+    player_stats = soup.find("main").find("section", {"class":"section-container"}).find("table")
+    if player_page_dict["is_mlb"]:
+        player_page_dict["avg_pts"] = player_stats.find_all("tr")[-1].find_all("td")[-2].get_text()
     return player_page_dict
 
 
