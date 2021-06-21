@@ -179,6 +179,7 @@ def main():
 
     hitter_columns = [
         "Player Name",
+	"Team",
         "Hand",
         "Position",
         "Hand",
@@ -202,6 +203,7 @@ def main():
     ]
     pitcher_columns = [
         "Player Name",
+	"Team",
         "Hand",
         "Position",
         "Hand",
