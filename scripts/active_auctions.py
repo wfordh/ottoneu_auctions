@@ -72,7 +72,8 @@ def main():
                 # if the player is MiLB, then remove the level
                 player_info.pop(0)
             player_dict["Position"] = player_info.pop()
-            player_dict["Team"] = player_info.pop()
+            # odd case where Puig does not have a team but other released players do
+            player_dict["Team"] = player_info.pop() if player_info else "FA"
         else:
             player_dict["Hand"] = None
             player_dict["Position"] = "UTIL"
