@@ -22,3 +22,4 @@ The script pulls the active auctions for the league each day at approximately 7 
 - Get better check to see if statcast data available for player's current year
 - Safely fail individual players so that the run itself doesn't fail
 - Combine stats when player appears for multiple teams? How to handle multiple teams vs multiple levels?
+- Better handle 5x5 pulls
