@@ -18,10 +18,12 @@ def main():
     league_id = command_args.pop("league", None)
     otto_league = ottoneuLeague(league_id)
     otto_league.setup_league_params()
-    auctions = otto_league.get_auctions()
+    auctions = otto_league.get_players(is_waiver=False)
+    waivers = otto_league.get_players(is_waiver=True)
 
     auction_players = list()
     # add check to see if there are auctions?
+    # everything same for waivers, just the claim/bid header
     for elem in tqdm(auctions):
         # workaround for days with no auctions
         if elem.find("a") is None:

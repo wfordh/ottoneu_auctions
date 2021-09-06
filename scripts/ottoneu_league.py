@@ -45,10 +45,11 @@ class ottoneuLeague:
         self.scoring_system = self._get_scoring_system()
         self.league_year = self._get_league_year()
 
-    def get_auctions(self):
-        resp = requests.get(self.auction_url)
+    def get_players(self, is_waiver):
+        url = self.waivers_url if is_waiver else self.auction_url
+        resp = requests.get(url)
         soup = BeautifulSoup(resp.content, "html.parser")
-        auctions = (
+        players = (
             soup.find("main")
             .find("section")
             .find("div", {"class": "table-container"})
@@ -56,8 +57,5 @@ class ottoneuLeague:
             .find_all("tr")
         )
         # pop the headers off
-        auctions.pop(0)
-        return auctions
-
-    def get_waivers():
-        pass
+        players.pop(0)
+        return players

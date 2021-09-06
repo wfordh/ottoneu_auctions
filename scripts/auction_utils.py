@@ -18,25 +18,37 @@ from pybaseball.statcast_pitcher import (
 )
 
 
-def get_player_page(elem):
+def get_player_page(elem, is_waiver=True):
     player_dict = dict()
     player_dict["Player Name"] = elem.find("a").get_text().strip()
     player_page_url = elem.find("a")["href"]
     player_info = elem.find("span").get_text().split()
-    # add more error handling
+    # don't love this indentation pattern
     if "N/A" not in player_info:
+        player_dict["is_mlb"] = True
+        if len(player_info) == 4:
+            # either MiLB or IL
+            if "IL" in player_info[3]:
+                player_info.pop()
+            else:
+                # MiLB
+                player_dict["is_mlb"] = False
+                player_info.pop(1)
         player_dict["Hand"] = player_info.pop()
-        if len(player_info) == 3:
-            # if the player is MiLB, then remove the level
-            player_info.pop(0)
         player_dict["Position"] = player_info.pop()
         # odd case where Puig does not have a team but other released players do
         player_dict["Team"] = player_info.pop() if player_info else "FA"
     else:
+        player_dict["is_mlb"] = True
         player_dict["Hand"] = None
         player_dict["Position"] = "UTIL"
         player_dict["Team"] = None
-    player_dict["min_bid"] = elem.find_all("td")[-1].get_text()
+
+    bid_or_claim = elem.find_all("td")[-1].get_text()
+    if is_waiver:
+        player_dict["waiver_salary"] = bid_or_claim
+    else:
+        player_dict["min_bid"] = bid_or_claim
     player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
     return player_dict
 
@@ -231,20 +243,7 @@ def get_ottoneu_player_page(player_dict, otto_league):
         .find("span", {"class": "strong tinytext"})
         .get_text()
     )
-    if "(" in level_data or len(level_data.split()) == 2:
-        player_page_dict["is_mlb"] = False
-    else:
-        latest_year = int(
-            soup.find("main")
-            .find("section", {"class": "section-container"})
-            .find("table")
-            .find_all("tr")[-1]
-            .find("td")
-            .get_text()
-        )
-        player_page_dict["is_mlb"] = (
-            True if latest_year == otto_league.league_year else False
-        )
+
     salary_data = header_data.find("div", {"class": "page-header__secondary"})
     player_page_dict["positions"] = (
         salary_data.find("div", {"class": "page-header__section--split"})
@@ -276,7 +275,7 @@ def get_ottoneu_player_page(player_dict, otto_league):
     player_stats = (
         soup.find("main").find("section", {"class": "section-container"}).find("table")
     )
-    if player_page_dict["is_mlb"]:
+    if player_dict["is_mlb"]:
         # will need to adjust for players with more than one team in year aka same as minor leaguers
         current_stats = player_stats.find_all("tr")[-1].find_all("td")
         avg_pts = current_stats[-2].get_text()
