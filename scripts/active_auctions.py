@@ -12,23 +12,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-l", "--league", help="The league id of interest", required=True)
 
 
-def main():
-    args = parser.parse_args()
-    command_args = dict(vars(args))
-    league_id = command_args.pop("league", None)
-    otto_league = ottoneuLeague(league_id)
-    otto_league.setup_league_params()
-    auctions = otto_league.get_players(is_waiver=False)
-    waivers = otto_league.get_players(is_waiver=True)
+def gather_player_data(data, otto_league, is_waiver):
+    players = list()
 
-    auction_players = list()
-    # add check to see if there are auctions?
-    # everything same for waivers, just the claim/bid header
-    for elem in tqdm(auctions):
+    for elem in tqdm(data):
         # workaround for days with no auctions
         if elem.find("a") is None:
             break
-        player_dict = auction_utils.get_player_page(elem)
+        player_dict = auction_utils.get_player_page(elem, is_waiver)
 
         is_hitter, is_pitcher = auction_utils.get_position_group(
             player_dict["Position"]
@@ -41,15 +32,30 @@ def main():
 
         player_dict["mlbam_id"] = auction_utils.get_mlbam_id(player_dict)
 
-        auction_players.append(player_dict)
+        players.append(player_dict)
 
-    hitters = [player for player in auction_players if player["is_hitter"]]
-    pitchers = [player for player in auction_players if player["is_pitcher"]]
+    hitters = [player for player in players if player["is_hitter"]]
+    pitchers = [player for player in players if player["is_pitcher"]]
 
-    hitters = auction_utils.get_hitters_statcast(hitters, otto_league)
-    pitchers = auction_utils.get_pitchers_statcast(pitchers, otto_league)
+    hitters = auction_utils.get_hitters_statcast(hitters, otto_league, is_waiver)
+    pitchers = auction_utils.get_pitchers_statcast(pitchers, otto_league, is_waiver)
+    # named tuple?
+    return (hitters, pitchers)
 
-    html = auction_utils.format_html(hitters, pitchers, league_id)
+
+def main():
+    args = parser.parse_args()
+    command_args = dict(vars(args))
+    league_id = command_args.pop("league", None)
+    otto_league = ottoneuLeague(league_id)
+    otto_league.setup_league_params()
+    auctions = otto_league.get_players(is_waiver=False)
+    waivers = otto_league.get_players(is_waiver=True)
+
+    auction_players = gather_player_data(auctions, otto_league, is_waiver=False)
+    waiver_players = gather_player_data(waivers, otto_league, is_waiver=True)
+
+    html = auction_utils.format_html(auction_players, waiver_players, league_id)
     print(html)
 
 

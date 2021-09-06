@@ -76,7 +76,7 @@ def get_mlbam_id(player_dict):
     return mlbam_id
 
 
-def get_hitters_statcast(hitters, otto_league):
+def get_hitters_statcast(hitters, otto_league, is_waiver):
     if not hitters:
         return hitters  # return nothing?
 
@@ -89,7 +89,7 @@ def get_hitters_statcast(hitters, otto_league):
         "is_mlb",
         "pts_g",
         "pa",
-        "min_bid",
+        f"{'waiver_salary' if is_waiver else 'min_bid'}",
         f"{otto_league.scoring_system} - Avg",
         f"{otto_league.scoring_system} - Med",
         f"{otto_league.scoring_system} - L10 Avg",
@@ -143,7 +143,8 @@ def get_hitters_statcast(hitters, otto_league):
     ]
 
 
-def get_pitchers_statcast(pitchers, otto_league):
+def get_pitchers_statcast(pitchers, otto_league, is_waiver):
+    # need to have somethign for waiver vs not
     if not pitchers:
         return pitchers
 
@@ -156,7 +157,7 @@ def get_pitchers_statcast(pitchers, otto_league):
         "is_mlb",
         "pts_ip",
         "ip",
-        "min_bid",
+        f"{'waiver_salary' if is_waiver else 'min_bid'}",
         f"{otto_league.scoring_system} - Avg",
         f"{otto_league.scoring_system} - Med",
         f"{otto_league.scoring_system} - L10 Avg",
@@ -212,18 +213,25 @@ def dict_to_html(records):
     return df.to_html().replace("\n", "")
 
 
-def format_html(hitters, pitchers, league_id):
-    hitters_html = dict_to_html(hitters)
-    pitchers_html = dict_to_html(pitchers)
+def format_html(auction_players, waiver_players, league_id):
+    auction_hitters_html = dict_to_html(auction_players[0])
+    auction_pitchers_html = dict_to_html(auction_players[1])
+
+    waiver_hitters_html = dict_to_html(waiver_players[0])
+    waiver_pitchers_html = dict_to_html(waiver_players[1])
     html = f"""
     <!doctype html>
     <html>
     <body>
     <h1>Ottoneu Auctions - <a href="https://ottoneu.fangraphs.com/{league_id}/home">League {league_id}</a></h1>
-    <h2> Hitters </h2>
-    {hitters_html}
-    <h2> Pitchers </h2>
-    {pitchers_html}
+    <h2> Auction Hitters </h2>
+    {auction_hitters_html}
+    <h2> Auction Pitchers </h2>
+    {auction_pitchers_html}
+    <h2> Waiver Hitters </h2>
+    {waiver_hitters_html}
+    <h2> Waiver Pitchers </h2>
+    {waiver_pitchers_html}
     <footer><a href="https://wfordh.github.io/ottoneu_auctions">Home</a></footer>
     </body>
     </html>
