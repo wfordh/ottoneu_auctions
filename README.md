@@ -11,13 +11,9 @@ The script pulls the active auctions for the league each day at approximately 7 
 ## TO DO
 - Figure out why `playerid_lookup()` prints the message each time. Either get it to stop printing each time or find a way to filter that out of the web page.
 - Stretch goal for this project is to make it possible to enter your league number and get that day's auctions, which effectively extends it to any league. Streamlit, [hex](https://hex.tech/) and PyWebIO are options.
-- Refactor so logic and UI are more effectively split. May require making a class
-  - players class to get all the relevant info? have param to determine if waivers or not?
-  - then UI does auctions and waivers separately?
-  - probably don't need separate `waiver_player.py` and `auction_player.py` files then
 - Curate columns for HTML more
 - Add Fangraphs' projections for RoS. Preferably an average of Depth Charts, ZiPS, Steamer, and THE BAT, converted to the FG Points system for Ottoneu.
-- Add players on waivers
+  - Might be something to add to `pybaseball`
 - Change percentiles to ints instead of floats. Not currently possible b/c of `NaN` percentiles
 - Get better check to see if statcast data available for player's current year
 - Safely fail individual players so that the run itself doesn't fail
