@@ -1,31 +1,190 @@
 import datetime
+import json
 import re
 from time import sleep
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import json
+from pybaseball import cache, playerid_lookup
+from pybaseball.statcast_batter import (
+    statcast_batter_exitvelo_barrels,
+    statcast_batter_expected_stats,
+    statcast_batter_percentile_ranks,
+)
+from pybaseball.statcast_pitcher import (
+    statcast_pitcher_expected_stats,
+    statcast_pitcher_percentile_ranks,
+)
 
 
-def get_league_scoring(league_id):
-    scoring_map = {
-        "FanGraphs Points": "FGP",
-        "H2H FanGraphs Points": "H2H FGP",
-    }
-    url = f"https://ottoneu.fangraphs.com/{league_id}/settings"
-    r = requests.get(url)
-    soup = BeautifulSoup(r.content, "html.parser")
-    rows = soup.find("main").find("table").find_all("tr")[1:]
-    settings = {
-        row.find_all("td")[0]
-        .get_text()
-        .strip(): row.find_all("td")[1]
-        .get_text()
-        .strip()
-        for row in rows
-    }
-    scoring_system = settings.get("Scoring System")
-    return scoring_map.get(scoring_system)
+def get_player_page(elem):
+    player_dict = dict()
+    player_dict["Player Name"] = elem.find("a").get_text().strip()
+    player_page_url = elem.find("a")["href"]
+    player_info = elem.find("span").get_text().split()
+    # add more error handling
+    if "N/A" not in player_info:
+        player_dict["Hand"] = player_info.pop()
+        if len(player_info) == 3:
+            # if the player is MiLB, then remove the level
+            player_info.pop(0)
+        player_dict["Position"] = player_info.pop()
+        # odd case where Puig does not have a team but other released players do
+        player_dict["Team"] = player_info.pop() if player_info else "FA"
+    else:
+        player_dict["Hand"] = None
+        player_dict["Position"] = "UTIL"
+        player_dict["Team"] = None
+    player_dict["min_bid"] = elem.find_all("td")[-1].get_text()
+    player_dict["ottoneu_id"] = player_page_url.rsplit("=")[1]
+    return player_dict
+
+
+def get_mlbam_id(player_dict):
+    if not player_dict["is_mlb"]:
+        return None
+
+    player_name = clean_name(player_dict["Player Name"])
+    first_name, last_name = player_name.split(maxsplit=1)
+
+    if "." in first_name:
+        # lookup has "A.J." as "A. J." for some reason
+        first_name = first_name.replace(".", ". ").strip()
+    id_lookup = playerid_lookup(last_name, first_name)
+    if id_lookup.shape[0] > 1:
+        mlbam_id = id_lookup.loc[
+            id_lookup.mlb_played_last == id_lookup.mlb_played_last.max()
+        ].key_mlbam.values[0]
+    elif id_lookup.shape[0] == 1:
+        mlbam_id = id_lookup.key_mlbam.values[0]
+    else:
+        # how could this happen?
+        mlbam_id = None
+    return mlbam_id
+
+
+def get_hitters_statcast(hitters, otto_league):
+    if not hitters:
+        return hitters  # return nothing?
+
+    hitter_columns = [
+        "Player Name",
+        "Team",
+        "Hand",
+        "Position",
+        "Hand",
+        "is_mlb",
+        "pts_g",
+        "pa",
+        "min_bid",
+        f"{otto_league.scoring_system} - Avg",
+        f"{otto_league.scoring_system} - Med",
+        f"{otto_league.scoring_system} - L10 Avg",
+        f"{otto_league.scoring_system} - L10 Med",
+        "avg_exit_velo",
+        "max_exit_velo",
+        "exit_velo_pctl",
+        "barrel_pa_rate",
+        "barrel_bbe_rate",
+        "barrel_bbe_pctl",
+        "xwoba",
+        "woba_diff",
+        "xwoba_pctl",
+    ]
+
+    exit_velo_data = statcast_batter_exitvelo_barrels(otto_league.league_year, minBBE=0)
+    percentile_ranks = statcast_batter_percentile_ranks(otto_league.league_year)
+    exp_stats = statcast_batter_expected_stats(otto_league.league_year, minPA=0)
+    for player in hitters:
+        if not player["is_mlb"] or not player["mlbam_id"]:
+            # avoid index error for minor leaguers
+            continue
+        exit_velo = exit_velo_data.loc[
+            exit_velo_data.player_id == player["mlbam_id"]
+        ].to_dict("records")
+        # if exit velo doesn't exist, then no statcast data for player and therefore continue?
+        if not exit_velo:
+            continue
+        player_exit_velo = exit_velo.pop()
+        # if this works, then don't need the adjustments below?
+        pctl_ranks = percentile_ranks.loc[
+            percentile_ranks.player_id == player["mlbam_id"]
+        ].to_dict("records")
+        player_pctl_ranks = pctl_ranks.pop() if pctl_ranks else None
+        x_stats = exp_stats.loc[exp_stats.player_id == player["mlbam_id"]].to_dict(
+            "records"
+        )
+        player_exp_stats = x_stats.pop() if x_stats else None
+        player["avg_exit_velo"] = player_exit_velo["avg_hit_speed"]
+        player["max_exit_velo"] = player_exit_velo["max_hit_speed"]
+        player["exit_velo_pctl"] = safe_int(player_pctl_ranks["exit_velocity"])
+        player["barrel_pa_rate"] = player_exit_velo["brl_pa"]
+        player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
+        player["barrel_bbe_pctl"] = safe_int(player_pctl_ranks["brl_percent"])
+        player["xwoba"] = player_exp_stats["est_woba"]
+        player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
+        player["xwoba_pctl"] = safe_int(player_pctl_ranks["xwoba"])
+
+    return [
+        {k: v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters
+    ]
+
+
+def get_pitchers_statcast(pitchers, otto_league):
+    if not pitchers:
+        return pitchers
+
+    pitcher_columns = [
+        "Player Name",
+        "Team",
+        "Hand",
+        "Position",
+        "Hand",
+        "is_mlb",
+        "pts_ip",
+        "ip",
+        "min_bid",
+        f"{otto_league.scoring_system} - Avg",
+        f"{otto_league.scoring_system} - Med",
+        f"{otto_league.scoring_system} - L10 Avg",
+        f"{otto_league.scoring_system} - L10 Med",
+        "k_pctl",
+        "bb_pctl",
+        "whiff_pctl",
+        "xwoba",
+        "woba_diff",
+        "era_diff",
+    ]
+
+    percentile_ranks = statcast_pitcher_percentile_ranks(otto_league.league_year)
+    exp_stats = statcast_pitcher_expected_stats(otto_league.league_year, 0)
+    for player in pitchers:
+        if not player["is_mlb"] or not player["mlbam_id"]:
+            continue
+        pctl_ranks = percentile_ranks.loc[
+            percentile_ranks.player_id == player["mlbam_id"]
+        ].to_dict("records")
+        # in case no statcast available
+        if not pctl_ranks:
+            continue
+        player_pctl_ranks = pctl_ranks.pop() if pctl_ranks else None
+        x_stats = exp_stats.loc[exp_stats.player_id == player["mlbam_id"]].to_dict(
+            "records"
+        )
+        player_exp_stats = x_stats.pop() if x_stats else None
+
+        player["k_pctl"] = safe_int(player_pctl_ranks["k_percent"])
+        player["bb_pctl"] = safe_int(player_pctl_ranks["bb_percent"])
+        player["whiff_pctl"] = safe_int(player_pctl_ranks["whiff_percent"])
+        player["xwoba"] = player_exp_stats["est_woba"]
+        player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
+        player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
+
+    return [
+        {k: v for k, v in pitcher.items() if k in pitcher_columns}
+        for pitcher in pitchers
+    ]
 
 
 def safe_int(data):
@@ -60,15 +219,10 @@ def format_html(hitters, pitchers, league_id):
     return html
 
 
-def get_ottoneu_player_page(player_dict, lg_id, lg_scoring):
+def get_ottoneu_player_page(player_dict, otto_league):
     sleep(1.1)
     player_page_dict = dict()
-    today = datetime.date.today()
-    if today.month < 4:
-        current_year = today.year - 1
-    else:
-        current_year = today.year
-    url = f"https://ottoneu.fangraphs.com/{lg_id}/playercard"
+    url = f"{otto_league.league_url}/playercard"
     r = requests.get(url, params={"id": player_dict["ottoneu_id"]})
     soup = BeautifulSoup(r.content, "html.parser")
     header_data = soup.find("main").find("header", {"class": "page-header"})
@@ -88,8 +242,9 @@ def get_ottoneu_player_page(player_dict, lg_id, lg_scoring):
             .find("td")
             .get_text()
         )
-        player_page_dict["is_mlb"] = True if latest_year == current_year else False
-    # player_page_dict["is_mlb"] = False if "(" in level_data else True
+        player_page_dict["is_mlb"] = (
+            True if latest_year == otto_league.league_year else False
+        )
     salary_data = header_data.find("div", {"class": "page-header__secondary"})
     player_page_dict["positions"] = (
         salary_data.find("div", {"class": "page-header__section--split"})
@@ -107,12 +262,12 @@ def get_ottoneu_player_page(player_dict, lg_id, lg_scoring):
     salary_tags = [
         "All - Avg",
         "All - Med",
-        f"{lg_scoring} - Avg",
-        f"{lg_scoring} - Med",
+        f"{otto_league.scoring_system} - Avg",
+        f"{otto_league.scoring_system} - Med",
         "All - Avg - L10",
         "All - Med - L10",
-        f"{lg_scoring} - Avg - L10",
-        f"{lg_scoring} - Med - L10",
+        f"{otto_league.scoring_system} - Avg - L10",
+        f"{otto_league.scoring_system} - Med - L10",
     ]
     salary_nums = [num.get_text() for num in salary_data.find_all("span")][:-2]
     for tag, num in zip(salary_tags, salary_nums):

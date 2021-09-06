@@ -11,6 +11,7 @@ pybaseball = "*"
 tqdm = "*"
 attr = "*"
 lxml = "*"
+isort = "*"
 
 [dev-packages]
 
