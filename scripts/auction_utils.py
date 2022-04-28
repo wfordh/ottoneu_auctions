@@ -328,3 +328,74 @@ def get_position_group(positions):
         else:
             is_hitter = True
     return is_hitter, is_pitcher
+
+
+def get_fg_game_logs(fg_id, season, is_mlb):
+    """No position info for MiLB :("""
+    if is_mlb:
+        url = f"https://cdn.fangraphs.com/api/players/game-log?playerid={fg_id}&position=&type=0&gds=&gde=&z=1637143594112&season={season}"
+    else:
+        url = f"https://cdn.fangraphs.com/api/players/game-log?playerid={fg_id}&position=&type=-1&gds=&gde=&z=&season={season}"
+    r = requests.get(url)
+    game_log_json = r.json()
+    league_key = "mlb" if is_mlb else "minor"
+    df = pd.DataFrame(game_log_json[league_key])
+    df.rename(
+        columns={"gamedate": "date", "Date": "url", "playerid": "fg_id"}, inplace=True
+    )
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df.columns = df.columns.str.lower()
+    mask = df["team"] == "- - -"
+    df = df[~mask].sort_values(by=["date"], inplace=False).drop(columns=["url"])
+    return df
+
+
+def scrape_fangraphs_projections(
+    player_id, batter=True, projection_type="ROS", print_url=False, projection_system="Steamer"
+):
+    """given player info, generate the player data and the steamer ROS projection.
+    INPUT:
+        player_id - fangraphs player id
+        batter - boolean flag, set to true if batter, false if pitcher
+        fangraphs URL requires a dummy position so we give it SS or P
+    OUTPUT:
+        player_data - dict of player bio data
+        steamer_data - dict of player steamer data
+    """
+
+    url = f"https://cdn.fangraphs.com/api/players/stats?playerid={player_id}&position={'SS' if batter else 'P'}"
+
+    if print_url == True:
+        print(url)
+    response = requests.get(url)
+    content = response.json()
+
+    player_data = {}
+    steamer_ros = {}
+
+    if not content.get("playerInfo"):
+        print("no player info!")
+        player_info = content["teamInfo"][0]
+        player_data = {}
+    else:
+        player_info = content["playerInfo"]
+
+    for a in content["data"]:
+        if a.get("AbbName") == projection_system and a.get("AbbLevel") == projection_type:
+            steamer_ros = a
+
+    if not steamer_ros:
+        print("missing steamer ROS projection!")
+
+    return player_data, steamer_ros, player_info, content
+
+
+def _convert_proj_to_fgpts(fg_proj, batter=True):
+    proj_pts = 0
+    if batter:
+        proj_pts = (
+            -1*fg_proj['AB'] +
+            5.6*fg_proj['H'] 
+        )
+    else:
+        pass
