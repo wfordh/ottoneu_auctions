@@ -76,10 +76,35 @@ def get_mlbam_id(player_dict):
     return mlbam_id
 
 
+def get_fangraphs_id(player_dict):
+    """Figure out a way to refactor this and get_mlbam_id()"""
+    if not player_dict["is_mlb"]:
+        return None
+
+    player_name = clean_name(player_dict["Player Name"])
+    first_name, last_name = player_name.split(maxsplit=1)
+
+    if "." in first_name:
+        # lookup has "A.J." as "A. J." for some reason
+        first_name = first_name.replace(".", ". ").strip()
+    id_lookup = playerid_lookup(last_name, first_name)
+    if id_lookup.shape[0] > 1:
+        fangraphs_id = id_lookup.loc[
+            id_lookup.mlb_played_last == id_lookup.mlb_played_last.max()
+        ].key_fangraphs.values[0]
+    elif id_lookup.shape[0] == 1:
+        fangraphs_id = id_lookup.key_fangraphs.values[0]
+    else:
+        # how could this happen?
+        fangraphs_id = None
+    return fangraphs_id
+
+
 def get_hitters_statcast(hitters, otto_league, is_waiver):
     if not hitters:
         return hitters  # return nothing?
 
+    # this prob shouldn't be in here if it's only getting statcast data
     hitter_columns = [
         "Player Name",
         "Team",
@@ -103,6 +128,7 @@ def get_hitters_statcast(hitters, otto_league, is_waiver):
         "xwoba",
         "woba_diff",
         "xwoba_pctl",
+        "proj_pts"
     ]
 
     exit_velo_data = statcast_batter_exitvelo_barrels(otto_league.league_year, minBBE=0)
@@ -137,10 +163,33 @@ def get_hitters_statcast(hitters, otto_league, is_waiver):
         player["xwoba"] = player_exp_stats["est_woba"]
         player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
         player["xwoba_pctl"] = safe_int(player_pctl_ranks["xwoba"])
+        player["proj_pts"] = get_hitters_ros_projection(player)
 
     return [
         {k: v for k, v in hitter.items() if k in hitter_columns} for hitter in hitters
     ]
+
+
+def get_hitters_ros_projection(hitter):
+    # will need ottoleague for scoring?
+    # for now go one hitter at a time
+    # will adjust this and get_hitters_statcast() to work in tandem better
+    # pass the player dict
+    # Espinal has a pid of -1 in the playerid lookup. real one is 19997
+    fg_id = get_fangraphs_id(hitter)
+    proj_pts = None
+    if fg_id and fg_id != -1:
+        hitter_proj = scrape_fangraphs_projections(fg_id, batter=True)
+        proj_pts = _convert_proj_to_fgpts(hitter_proj[1], batter=True)
+    return proj_pts
+
+
+def get_pitchers_ros_projection(pitcher):
+    # these can also prob be combined
+    fg_id = get_fangraphs_id(pitcher)
+    pitcher_proj = scrape_fangraphs_projections(fg_id, batter=False)
+    proj_pts = _convert_proj_to_fgpts(pitcher_proj[1], batter=False)
+    return proj_pts
 
 
 def get_pitchers_statcast(pitchers, otto_league, is_waiver):
@@ -168,6 +217,7 @@ def get_pitchers_statcast(pitchers, otto_league, is_waiver):
         "xwoba",
         "woba_diff",
         "era_diff",
+        "proj_pts"
     ]
 
     percentile_ranks = statcast_pitcher_percentile_ranks(otto_league.league_year)
@@ -193,6 +243,7 @@ def get_pitchers_statcast(pitchers, otto_league, is_waiver):
         player["xwoba"] = player_exp_stats["est_woba"]
         player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
         player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
+        player["proj_pts"] = get_pitchers_ros_projection(player)
 
     return [
         {k: v for k, v in pitcher.items() if k in pitcher_columns}
@@ -240,7 +291,7 @@ def format_html(auction_players, waiver_players, league_id):
 
 
 def get_ottoneu_player_page(player_dict, otto_league):
-    sleep(1.1)
+    sleep(1.3)
     player_page_dict = dict()
     url = f"{otto_league.league_url}/playercard"
     r = requests.get(url, params={"id": player_dict["ottoneu_id"]})
@@ -394,8 +445,25 @@ def _convert_proj_to_fgpts(fg_proj, batter=True):
     proj_pts = 0
     if batter:
         proj_pts = (
-            -1*fg_proj['AB'] +
-            5.6*fg_proj['H'] 
+            -1.0*fg_proj['AB'] +
+            5.6*fg_proj['H'] +
+            2.9*fg_proj['2B'] +
+            5.7*fg_proj['3B'] +
+            9.4*fg_proj['HR'] +
+            3.0*fg_proj['BB'] +
+            3.0*fg_proj['HBP'] +
+            1.9*fg_proj['SB'] +
+            -2.8*fg_proj['CS']
         )
     else:
-        pass
+        proj_pts = (
+            7.4*fg_proj['IP'] +
+            2.0*fg_proj['SO'] +
+            -3.0*fg_proj['BB'] +
+            -2.6*fg_proj['H'] +
+            -3.0*fg_proj['HBP'] +
+            -12.3*fg_proj['HR'] +
+            5.0*fg_proj['SV'] +
+            4.0*fg_proj['HLD']
+        )
+    return proj_pts

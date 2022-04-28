@@ -17,11 +17,11 @@ jobs:
       with:
         python-version: 3.7.1
     - run: pip install -r requirements.txt
-    - run: echo "<!doctype html><html><body><h1>Ottoneu Leagues - $(date +%m-%d-%Y)</h1><p><a href='https://wfordh.github.io/ottoneu_auctions/953.html'>Harry Caray Memorial</a><br><a href='https://wfordh.github.io/ottoneu_auctions/1053.html'>20 Sided Diamond</a><br><a href='https://wfordh.github.io/ottoneu_auctions/120.html'>Fourteenth Inning Stretch</a><br><a href='https://wfordh.github.io/ottoneu_auctions/725.html'>Champs B</a><br><a href='https://wfordh.github.io/ottoneu_auctions/806.html'>Minnesota Ottoneu Association</a><br><a href='https://wfordh.github.io/ottoneu_auctions/1336.html'>5xprospect5</a></p><footer><p><a href='https://github.com/wfordh/ottoneu_auctions'>Code</a></p></body></html>" > public/index.html
+    - run: echo "<!doctype html><html><body><h1>Ottoneu Leagues - $(date +%m-%d-%Y)</h1><p><a href='https://wfordh.github.io/ottoneu_auctions/953.html'>Harry Caray Memorial</a><br><a href='https://wfordh.github.io/ottoneu_auctions/1053.html'>20 Sided Diamond</a><br><a href='https://wfordh.github.io/ottoneu_auctions/120.html'>Fourteenth Inning Stretch</a><br><a href='https://wfordh.github.io/ottoneu_auctions/530.html'>Champs A</a><br><a href='https://wfordh.github.io/ottoneu_auctions/806.html'>Minnesota Ottoneu Association</a><br><a href='https://wfordh.github.io/ottoneu_auctions/1336.html'>5xprospect5</a></p><footer><p><a href='https://github.com/wfordh/ottoneu_auctions'>Code</a></p></body></html>" > public/index.html
     - run: python3 scripts/active_auctions.py -l 953 > public/953.html
     - run: python3 scripts/active_auctions.py -l 1053 > public/1053.html
     - run: python3 scripts/active_auctions.py -l 120 > public/120.html
-    - run: python3 scripts/active_auctions.py -l 725 > public/725.html
+    - run: python3 scripts/active_auctions.py -l 530 > public/530.html
     - run: python3 scripts/active_auctions.py -l 806 > public/806.html
     - run: python3 scripts/active_auctions.py -l 1336 > public/1336.html
     - name: GitHub Pages
