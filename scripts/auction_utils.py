@@ -252,10 +252,11 @@ def get_pitchers_statcast(pitchers, otto_league, is_waiver):
 
 
 def safe_int(data):
-    try:
-        data = int(data)
-    except ValueError:
-        pass
+    if data:
+        try:
+            data = int(data)
+        except ValueError:
+            pass
     return data
 
 
