@@ -156,13 +156,13 @@ def get_hitters_statcast(hitters, otto_league, is_waiver):
         player_exp_stats = x_stats.pop() if x_stats else None
         player["avg_exit_velo"] = player_exit_velo["avg_hit_speed"]
         player["max_exit_velo"] = player_exit_velo["max_hit_speed"]
-        player["exit_velo_pctl"] = safe_int(player_pctl_ranks["exit_velocity"])
+        player["exit_velo_pctl"] = safe_int(player_pctl_ranks["exit_velocity"]) if player_pctl_ranks else None
         player["barrel_pa_rate"] = player_exit_velo["brl_pa"]
         player["barrel_bbe_rate"] = player_exit_velo["brl_percent"]
-        player["barrel_bbe_pctl"] = safe_int(player_pctl_ranks["brl_percent"])
+        player["barrel_bbe_pctl"] = safe_int(player_pctl_ranks["brl_percent"]) if player_pctl_ranks else None
         player["xwoba"] = player_exp_stats["est_woba"]
         player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
-        player["xwoba_pctl"] = safe_int(player_pctl_ranks["xwoba"])
+        player["xwoba_pctl"] = safe_int(player_pctl_ranks["xwoba"]) if player_pctl_ranks else None
         player["proj_pts"] = get_hitters_ros_projection(player)
 
     return [
@@ -238,10 +238,10 @@ def get_pitchers_statcast(pitchers, otto_league, is_waiver):
             "records"
         )
         player_exp_stats = x_stats.pop() if x_stats else None
-
-        player["k_pctl"] = safe_int(player_pctl_ranks["k_percent"])
-        player["bb_pctl"] = safe_int(player_pctl_ranks["bb_percent"])
-        player["whiff_pctl"] = safe_int(player_pctl_ranks["whiff_percent"])
+        if player_pctl_ranks:
+            player["k_pctl"] = safe_int(player_pctl_ranks["k_percent"])
+            player["bb_pctl"] = safe_int(player_pctl_ranks["bb_percent"])
+            player["whiff_pctl"] = safe_int(player_pctl_ranks["whiff_percent"])
         player["xwoba"] = player_exp_stats["est_woba"]
         player["woba_diff"] = player_exp_stats["est_woba_minus_woba_diff"]
         player["era_diff"] = player_exp_stats["era_minus_xera_diff"]
