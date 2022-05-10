@@ -187,6 +187,8 @@ def get_hitters_ros_projection(hitter):
 def get_pitchers_ros_projection(pitcher):
     # these can also prob be combined
     fg_id = get_fangraphs_id(pitcher)
+    if fg_id == -1:
+        return None
     pitcher_proj = scrape_fangraphs_projections(fg_id, batter=False)
     proj_pts = _convert_proj_to_fgpts(pitcher_proj[1], batter=False)
     return proj_pts
@@ -424,7 +426,6 @@ def scrape_fangraphs_projections(
 
     player_data = {}
     steamer_ros = {}
-
     if not content.get("playerInfo"):
         print("no player info!")
         player_info = content["teamInfo"][0]
