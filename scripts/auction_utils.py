@@ -337,7 +337,7 @@ def get_ottoneu_player_page(player_dict, otto_league):
     player_stats = (
         soup.find("main").find("section", {"class": "section-container"}).find("table")
     )
-    if player_dict["is_mlb"]:
+    if player_dict["is_mlb"] and player_stats:
         # will need to adjust for players with more than one team in year aka same as minor leaguers
         current_stats = player_stats.find_all("tr")[-1].find_all("td")
         avg_pts = current_stats[-2].get_text()
